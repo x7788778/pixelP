@@ -11,29 +11,23 @@
       border:1px solid black;
       /* display: inline-block */
       width: max-content;
+      height:max-content
     }
-    .row {
-      display: flex
-    }
-    .dot {
-      width: 1rem;
-      height: 1rem;
-      border:1px solid black
-    }
+    
   </style>
 </head>
 <body>
   <div id="root">
     <div class="canvas">
-      <div class="row" v-for="(row, y) in pixelData">
-        <span 
-          class="dot" 
-          v-for="(dotColor, x) in row" 
-          :style="{background: dotColor}"
-          @click="drawDot(x,y,currentColor)"
-        ></span>
-      </div>
+      <canvas 
+        ref="canvas" 
+        :width="width" 
+        :height="height"
+        @click="handleCanvasClick"
+        >
+      </canvas>
     </div>
+    <button @click="isPickingColor = true">{{isPickingColor ? '取色中...' : ' 取色  '}}</button>
     <el-color-picker v-model="currentColor"></el-color-picker>
     <label v-for="color in commonColors" :style="{color:color}">
       <input 
@@ -52,32 +46,70 @@
   el:"#root",
   data() {
     return {
-      pixelData:[],
-      commonColors:['red','orange','yellow','green','aqua','blue','purple','black','white'],
-      currentColor:'red',
-      
-
+      pixelData: [],
+      commonColors: ['red','orange','yellow','green','aqua','blue','purple','black','white'],
+      currentColor: 'red',
+      width: 10,
+      height: 10,
+      isPickingColor: false
     }
   },
   methods: {
-    drawDot(x, y, color) {
+    handleCanvasClick(e){
+      if (this.isPickingColor) {
+        this.pickColor(e)
+      } else {
+        this.drawDot(e)
+      }
+    },
+    rgba2hex(dot) {
+      dot = Array.from(dot)
+      dot = dot.map(it => it.toString(16).padStart(2, '0'))
+      return '#' + dot[0] + dot[1] + dot[2]
+    },
+    pickColor(e) {
+      var x = e.layerX
+      var y = e.layerY
+      var p = this.ctx.getImageData(x,y,1,1).data
+      var hexColor = this.rgba2hex(p)
+      this.currentColor = hexColor
+      this.isPickingColor = false
+    },
+    drawDot(e) {
+      console.log(e)
       this.ws.send(JSON.stringify({
         type:"drawDot",
-        x,y,color
+        x: e.layerX,
+        y: e.layerY,
+        color:this.currentColor
       }))
     }
   },
   mounted() {
     var ws = new WebSocket("ws://localhost:9095/pixel")
     this.ws = ws
+    var canvas = this.$refs.canvas
+    var ctx = canvas.getContext('2d')
+    this.ctx = ctx
     ws.onmessage = obj => {//监听后端的消息事件
       data = JSON.parse(obj.data)
       console.log(obj,"后端数据")
       if(data.type === "init") {
-        this.pixelData = data.pixelData
+        // this.pixelData = data.pixelData
+        this.width = data.pixelData[0].length
+        this.height = data.pixelData.length
+        Vue.nextTick(() => {
+          data.pixelData.forEach((row, y) => {
+            row.forEach((color, x) => {
+              ctx.fillStyle = color
+              ctx.fillRect(x,y,1,1)
+            })
+          })
+        })
       } else if (data.type === "updateDot") {
-        
-        this.$set(this.pixelData[data.y],data.x,data.color)
+        // this.$set(this.pixelData[data.y],data.x,data.color)
+        ctx.fillStyle = data.color
+        ctx.fillRect(data.x,data.y,1,1)
       }
 
       
