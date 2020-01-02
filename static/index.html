@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <title>pixel painter</title>
+  <style>
+    .canvas {
+      border:1px solid black;
+      /* display: inline-block */
+      width: max-content;
+    }
+    .row {
+      display: flex
+    }
+    .dot {
+      width: 1rem;
+      height: 1rem;
+      border:1px solid black
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="canvas">
+      <div class="row" v-for="(row, y) in pixelData">
+        <span 
+          class="dot" 
+          v-for="(dotColor, x) in row" 
+          :style="{background: dotColor}"
+          @click="drawDot(x,y,currentColor)"
+        ></span>
+      </div>
+    </div>
+    <el-color-picker v-model="currentColor"></el-color-picker>
+    <label v-for="color in commonColors" :style="{color:color}">
+      <input 
+        type="radio" 
+        v-model="currentColor"
+        :value="color"
+      >{{color}}
+
+    </label>
+  </div>
+</body>
+<script src="./vue-2.6.11.js"></script>
+<!-- <script src="../src/index.js"></script> -->
+<script>
+  const app = new Vue({
+  el:"#root",
+  data() {
+    return {
+      pixelData:[],
+      commonColors:['red','orange','yellow','green','aqua','blue','purple','black','white'],
+      currentColor:'red',
+      
+
+    }
+  },
+  methods: {
+    drawDot(x, y, color) {
+      this.ws.send(JSON.stringify({
+        type:"drawDot",
+        x,y,color
+      }))
+    }
+  },
+  mounted() {
+    var ws = new WebSocket("ws://localhost:9095/pixel")
+    this.ws = ws
+    ws.onmessage = obj => {//监听后端的消息事件
+      data = JSON.parse(obj.data)
+      console.log(obj,"后端数据")
+      if(data.type === "init") {
+        this.pixelData = data.pixelData
+      } else if (data.type === "updateDot") {
+        
+        this.$set(this.pixelData[data.y],data.x,data.color)
+      }
+
+      
+    }
+  }
+})
+</script>
+<script src="./elementui.js"></script>
+</html>
