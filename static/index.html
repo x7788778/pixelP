@@ -13,7 +13,9 @@
       width: max-content;
       height:max-content
     }
-    
+    canvas {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -49,8 +51,8 @@
       pixelData: [],
       commonColors: ['red','orange','yellow','green','aqua','blue','purple','black','white'],
       currentColor: 'red',
-      width: 10,
-      height: 10,
+      width: 256,
+      height: 256,
       isPickingColor: false
     }
   },
@@ -89,30 +91,38 @@
     var ws = new WebSocket("ws://localhost:9095/pixel")
     this.ws = ws
     var canvas = this.$refs.canvas
+    canvas.style.imageRendering = 'pixelated'
     var ctx = canvas.getContext('2d')
     this.ctx = ctx
-    ws.onmessage = obj => {//监听后端的消息事件
-      data = JSON.parse(obj.data)
-      console.log(obj,"后端数据")
-      if(data.type === "init") {
-        // this.pixelData = data.pixelData
-        this.width = data.pixelData[0].length
-        this.height = data.pixelData.length
-        Vue.nextTick(() => {
-          data.pixelData.forEach((row, y) => {
-            row.forEach((color, x) => {
-              ctx.fillStyle = color
-              ctx.fillRect(x,y,1,1)
+    ws.onmessage = e => {//监听后端的消息事件
+      var {data} = e
+      if (Object.prototype.toString.call(data) == "[object Blob]") {
+        var img = new Image()
+        img.src = URL.createObjectURL(data)
+        setTimeout(() => {
+          ctx.drawImage(img,0,0)
+        },500)
+      } else {
+        data = JSON.parse(data)
+        if(data.type === "init") {
+          // this.pixelData = data.pixelData
+          this.width = data.pixelData[0].length
+          this.height = data.pixelData.length
+          console.log(this.width,this.width)
+          Vue.nextTick(() => {
+            data.pixelData.forEach((row, y) => {
+              row.forEach((color, x) => {
+                ctx.fillStyle = color
+                ctx.fillRect(x,y,1,1)
+              })
             })
           })
-        })
-      } else if (data.type === "updateDot") {
+        } else if (data.type === "updateDot") {
         // this.$set(this.pixelData[data.y],data.x,data.color)
-        ctx.fillStyle = data.color
-        ctx.fillRect(data.x,data.y,1,1)
+          ctx.fillStyle = data.color
+          ctx.fillRect(data.x,data.y,1,1)
+        }
       }
-
-      
     }
   }
 })
