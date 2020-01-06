@@ -16,6 +16,23 @@
     canvas {
       display: block;
     }
+    .common-colors {
+      background-color: #a79f9f93;
+      padding: 3px
+    }
+    .color-card {
+      width: 22px;
+      height: 22px;
+      background-color: currentColor;
+      border-radius: 2px;
+      display: inline-block;
+      margin: 5px;
+      vertical-align: bottom;
+    }
+    .color-card.active {
+      border:5px solid;
+      margin:3px
+    }
   </style>
 </head>
 <body>
@@ -31,14 +48,16 @@
     </div>
     <button @click="isPickingColor = true">{{isPickingColor ? '取色中...' : ' 取色  '}}</button>
     <el-color-picker v-model="currentColor"></el-color-picker>
-    <label v-for="color in commonColors" :style="{color:color}">
-      <input 
-        type="radio" 
-        v-model="currentColor"
-        :value="color"
-      >{{color}}
+    <div class="common-colors">
+      <span
+        v-for="c in commonColors"
+        @click="currentColor=c"
+        :class="{'color-card':true,active:c==currentColor}"
+        :style="{color:c}"
+      >
 
-    </label>
+      </span>
+    </div>
   </div>
 </body>
 <script src="./vue-2.6.11.js"></script>
@@ -49,7 +68,7 @@
   data() {
     return {
       pixelData: [],
-      commonColors: ['red','orange','yellow','green','aqua','blue','purple','black','white'],
+      commonColors: ['#000000','#FFFFFF','#AAAAAA','#555555','#FED3C7','#FFC4CE','#FAAC8E','#FF8B83','#F44336','#E91E63','#E2669E','#9C27B0','#673AB7','#3F51B5','#004670','#057197','#2196F3','#00BCD4','#3BE5DB','#97FDDC','#167300','#37A93C','#89E642','#D7FF07','#FFF6D1','#F8CB8C','#FFEB3B','#FFC107','#FF9800','#FF5722','#B83F27','#795548'],
       currentColor: 'red',
       width: 256,
       height: 256,
