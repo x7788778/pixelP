@@ -20,12 +20,7 @@ async function main() {
   } catch(e) {
     img = new Jimp(256, 256, 0xffffffff)
   }
-  setInterval(()=>{
-    img.write(path.join(__dirname,'./static/pixel.png'),(()=>{
-      console.log(`data saved `)
-    }))
-        
-  },3000)
+  
   wss.on('connection', (ws, req) => {
     img.getBuffer(Jimp.MIME_JPEG,(err,buf) => {
       if(err){
@@ -34,7 +29,20 @@ async function main() {
         ws.send(buf)
       }
     })//拿到png图片的编码
-    
+    wss.clients.forEach(ws => {
+      ws.send(JSON.stringify({
+        type:'onlineCount',
+        count:wss.clients.size,
+      }))
+    })
+    ws.on('close', () => {
+      wss.clients.forEach(ws => {
+        ws.send(JSON.stringify({
+          type:'onlineCount',
+          count:wss.clients.size,
+        }))
+      })
+    })
     var lastDraw = 0
     ws.on('message', msg => {
       var now = Date.now()
@@ -47,10 +55,8 @@ async function main() {
               return
             }
         var hexColor = Jimp.cssColorToHex(msg.color)
-        console.log(msg,hexColor,'msgggg')
         
         img.setPixelColor(hexColor,msg.x,msg.y)
-        console.log(wss.clients,"clents")
         wss.clients.forEach( client => {
           client.send(JSON.stringify({
             type:"updateDot",
@@ -59,6 +65,9 @@ async function main() {
             color:msg.color
           }))
         })
+        img.write(path.join(__dirname,'./static/pixel.png'),(()=>{
+          console.log(`data saved `)
+        }))
       }
     })
   })
