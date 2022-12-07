@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.18.2",
     "jimp": "^0.9.3",
     "socket.io": "^2.3.0",
     "vue": "^2.6.11",
